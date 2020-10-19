@@ -1,0 +1,21 @@
+version: '3'
+services:
+  backend:
+    build: ./backend
+    container_name: cbs-poc-backend
+    environment:
+      - KUBECONFIG=/kubeconfig.yml
+      - ADDRESS=0.0.0.0
+    ports:
+      - 3001:3001
+    volumes:
+      - $KUBECONFIG:/kubeconfig.yml:ro
+
+  frontend:
+    build: ./frontend
+    container_name: cbs-poc-frontend
+    ports:
+      - 3000:3000
+    links:
+      - backend
+    stdin_open: true # prevent CRA from returning with 0 immediately

@@ -72,6 +72,7 @@ app.patch("/api-rules", async (req, res) => {
 });
 
 const port = process.env.PORT || 3001;
-server.listen(port, "localhost", () => {
-  console.log(`server started ${port}!`);
+const address = process.env.ADDRESS || "localhost";
+server.listen(port, address, () => {
+  console.log(`server started @ ${port}!`);
 });
