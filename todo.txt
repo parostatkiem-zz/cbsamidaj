@@ -1,2 +1,0 @@
-subskrypcja w k8s-client for js przy starcie zawsze zwraca wszystkie istniejące encje
-hot reload serwera nie zamyka połączenia w przeglądarce

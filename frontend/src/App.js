@@ -1,5 +1,5 @@
 import React from "react";
-import { /*useGet,*/ useDelete, useUpdate, useSubscription } from "./api";
+import { useGet, useDelete, useUpdate, useSubscription } from "./api";
 import { handleSubscriptionEvent } from "./handleSubscriptionEvent";
 
 function ApiRuleDetails({ spec }) {
@@ -29,9 +29,7 @@ function ApiRuleDetails({ spec }) {
 
 export default function App() {
   const [apiRules, setApiRules] = React.useState([]);
-  // const { loading, error } = useGet("api-rules", setApiRules);
-  const loading = false;
-  const error = null;
+  const { loading, error } = useGet("api-rules", setApiRules);
   const updateApiRuleMutation = useUpdate("api-rules");
   const deleteApiRuleMutation = useDelete("api-rules");
 

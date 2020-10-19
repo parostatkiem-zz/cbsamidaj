@@ -5,7 +5,12 @@ export function handleSubscriptionEvent(setResource) {
     const { type, object } = data;
     switch (type) {
       case "ADDED":
-        setResource((resource) => [...resource, object]);
+        setResource((resource) => {
+          if (!resource.find(r => r.metadata.name === object.metadata.name)) {
+            return [...resource, object];
+          }
+          return resource;
+        });
         break;
       case "DELETED":
         setResource((resource) => resource.filter(filterByName(object)));
