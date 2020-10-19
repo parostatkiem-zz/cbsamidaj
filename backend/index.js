@@ -38,6 +38,7 @@ app.get("/api-rules", async (req, res) => {
   kubeconfig.applyToRequest(opts);
 
   request.get(apiRulesUrl, opts, (error, response, body) => {
+
     // todo return {data: data, error: error}
     if (error) {
       res.send(error);
@@ -48,25 +49,31 @@ app.get("/api-rules", async (req, res) => {
 });
 
 app.patch("/api-rules", async (req, res) => {
-  const { name, namespace, newName } = req.query;
+  const { name, namespace, newHost } = req.query;
   const opts = {};
   kubeconfig.applyToRequest(opts);
-  req.get(apiRulesUrl, opts, (error, response, body) => {
-    const rule = JSON.parse(body).items[0];
-    rule.metadata.name = newName;
-    const opts = {
-      headers: { "Content-type": "application/json-merge-patch" },
+  console.log('name', name)
+  request.get(`${apiRulesUrl}${name}`, opts, (error, response, body) => {
+
+    console.log('apiRulesUrl', apiRulesUrl)
+    console.log('body', body)
+    const rule = JSON.parse(body);
+    rule.spec.service.host = `su${rule.spec.service.host}`;
+    
+    const data = {
+      url: `${apiRulesUrl}${name}`,
+      body: JSON.stringify(rule),
+      rejectUnauthorized: false,
+      headers: { "Content-type": 'application/merge-patch+json' },
     };
-    console.log(rule);
-    kubeconfig.applyToRequest(opts);
-    const data = { url: `${apiRulesUrl}${name}`, body: JSON.stringify(rule) };
-    console.log("tes");
-    req.patch(data, opts, (error, response, body) => {
-      if (error) console.log(error);
-      else console.log("!");
-      console.log(response);
-      console.log(body);
-      res.send("ok");
+    kubeconfig.applyToRequest(data);
+
+    request.patch(data, (error, response, body) => {
+      if (error) {
+        res.send(error);
+      } else {
+        res.send(JSON.parse(body));
+      }
     });
   });
 });

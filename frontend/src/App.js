@@ -48,7 +48,7 @@ export default function App() {
 
   const updateApiRule = async ({ name, namespace }) => {
     try {
-      await updateApiRuleMutation({ name, namespace, newName: "kasia" });
+      await updateApiRuleMutation({ name, namespace, newHost: "newHost" });
     } catch (e) {
       console.warn(e);
     }
