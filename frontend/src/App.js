@@ -1,6 +1,8 @@
 import React from "react";
 import { useGet, useDelete, useUpdate, useSubscription } from "./api";
 import { handleSubscriptionEvent } from "./handleSubscriptionEvent";
+// import { ApiRuleDetailsForm } from "./ApiRuleDetailsForm/ApiRuleDetailsForm";
+
 
 function ApiRuleDetails({ spec }) {
   return (
@@ -29,6 +31,7 @@ function ApiRuleDetails({ spec }) {
 
 export default function App() {
   const [apiRules, setApiRules] = React.useState([]);
+  // const [updatedapiRule, setuUpdatedapiRule] = React.useState({});
   const { loading, error } = useGet("api-rules", setApiRules);
   const updateApiRuleMutation = useUpdate("api-rules");
   const deleteApiRuleMutation = useDelete("api-rules");
@@ -68,6 +71,7 @@ export default function App() {
             <button onClick={() => updateApiRule(metadata)}>Update</button>
           </summary>
           <ApiRuleDetails spec={spec} />
+          {/* <ApiRuleDetailsForm spec={spec} updatedapiRule={updatedapiRule} setuUpdatedapiRule={setuUpdatedapiRule} /> */}
         </details>
       ))}
     </main>
