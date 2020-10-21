@@ -1,9 +1,27 @@
 import React from "react";
 import { useGet, useDelete, useUpdate, useSubscription } from "./api";
 import { handleSubscriptionEvent } from "./handleSubscriptionEvent";
-// import { ApiRuleDetailsForm } from "./ApiRuleDetailsForm/ApiRuleDetailsForm";
+import { ApiRuleDetailsForm } from "./ApiRuleDetailsForm/ApiRuleDetailsForm";
 
 
+function ApiRuleContent({ metadata, spec, status, deleteApiRule, updateApiRule }) {
+
+  const [edit, setEdit] = React.useState(false);
+  return (
+    <details key={metadata.name}>
+      <summary>
+        {metadata.name} @ {metadata.namespace} [{status?.APIRuleStatus.code}]
+        <button onClick={() => deleteApiRule(metadata)}>Delete</button>
+        {!edit && <button onClick={() => setEdit(true)}>Edit</button>}
+        {edit && <button onClick={() => setEdit(false)}>Cancel</button>}
+      </summary>
+      {!edit &&
+        <ApiRuleDetails spec={spec} />}
+      {edit &&
+        <ApiRuleDetailsForm metadata={metadata} spec={spec} edit={edit} updateApiRule={updateApiRule} />}
+    </details>
+  );
+}
 function ApiRuleDetails({ spec }) {
   return (
     <dl>
@@ -31,7 +49,6 @@ function ApiRuleDetails({ spec }) {
 
 export default function App() {
   const [apiRules, setApiRules] = React.useState([]);
-  // const [updatedapiRule, setuUpdatedapiRule] = React.useState({});
   const { loading, error } = useGet("api-rules", setApiRules);
   const updateApiRuleMutation = useUpdate("api-rules");
   const deleteApiRuleMutation = useDelete("api-rules");
@@ -49,13 +66,14 @@ export default function App() {
     }
   };
 
-  const updateApiRule = async ({ name, namespace }) => {
+  const updateApiRule = async ({ name, namespace, apiRule }) => {
     try {
-      await updateApiRuleMutation({ name, namespace, newHost: "newHost" });
+      await updateApiRuleMutation({ name, namespace, apiRule });
     } catch (e) {
       console.warn(e);
     }
   };
+
 
   if (loading) return "Loading...";
   if (error) return error.message;
@@ -64,15 +82,7 @@ export default function App() {
   return (
     <main>
       {apiRules.map(({ metadata, spec, status }) => (
-        <details key={metadata.name}>
-          <summary>
-            {metadata.name} @ {metadata.namespace} [{status?.APIRuleStatus.code}]
-            <button onClick={() => deleteApiRule(metadata)}>Delete</button>
-            <button onClick={() => updateApiRule(metadata)}>Update</button>
-          </summary>
-          <ApiRuleDetails spec={spec} />
-          {/* <ApiRuleDetailsForm spec={spec} updatedapiRule={updatedapiRule} setuUpdatedapiRule={setuUpdatedapiRule} /> */}
-        </details>
+        <ApiRuleContent metadata={metadata} spec={spec} status={status} deleteApiRule={deleteApiRule} updateApiRule={updateApiRule} />
       ))}
     </main>
   );

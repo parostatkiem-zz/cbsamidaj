@@ -4,13 +4,29 @@ import accessStrategyTypes, {
   supportedMethodsList,
 } from './accessStrategyTypes';
 
-export function ApiRuleDetailsForm({ spec }) {
-  console.log('spec', spec)
+export function ApiRuleDetailsForm({ metadata, spec, updateApiRule }) {
 
   const [rules, setRules] = useState(spec.rules.map(r => ({ ...r, renderKey: uuid() })));
 
-  function removeAccessStrategy(index) {
-    setRules(rules => [...rules.slice(0, index), ...rules.slice(index + 1)]);
+  function update(formValues) {
+    const data = {
+      spec: {
+        rules: rules,
+        gateway: formValues.spec.gateway.current.value || spec.gateway,
+        service: {
+          host: formValues.spec.service.host.current.value || spec.service.host,
+          name: formValues.spec.service.name.current.value || spec.service.name,
+          port: Number(formValues.spec.service.port.current.value) || spec.service.port,
+        }
+      }
+    };
+
+    updateApiRule({
+      name: metadata.name,
+      namespace: metadata.namespace,
+      apiRule: JSON.stringify(data)
+    });
+
   }
 
   const formValues = {
@@ -50,7 +66,7 @@ export function ApiRuleDetailsForm({ spec }) {
           id={`spec-service-port-${uuid()}`}
           defaultValue={spec.service.port}
           ref={formValues.spec.service.port}
-          type="text"
+          type="number"
         />
       </dd>
       <dt>Service Host</dt>
@@ -78,17 +94,17 @@ export function ApiRuleDetailsForm({ spec }) {
                   ]);
 
                 }}
-                removeStrategy={() => removeAccessStrategy(idx)}
 
               />
             );
           })
         }
       </ul>
+      <button onClick={() => update(formValues)}>Update</button>
     </dl>
   );
 }
-function StrategyForm({ strategy, setStrategy, removeStrategy }) {
+function StrategyForm({ strategy, setStrategy }) {
   console.log('strategy', strategy)
 
   const selectedType = strategy.accessStrategies[0].name;

@@ -48,31 +48,17 @@ app.get("/api-rules", async (req, res) => {
 });
 
 app.patch("/api-rules", async (req, res) => {
-  const { name, namespace, newHost } = req.query;
+  const { name, namespace, apiRule } = req.query;
 
   const parameterizedApiRulesUrl = `${kubeconfig.getCurrentCluster().server
     }/apis/gateway.kyma-project.io/v1alpha1/namespaces/${namespace}/apirules/${name}`;
 
   const opts = {};
   kubeconfig.applyToRequest(opts);
-  console.log('name', name)
   request.get(parameterizedApiRulesUrl, opts, (error, response, body) => {
-
-    console.log('parameterizedApiRulesUrl', parameterizedApiRulesUrl)
-    console.log('body', body)
-    const rule = JSON.parse(body);
-    const rule1 ={
-      spec: {
-        service: {
-          host: `sla${rule.spec.service.host}`
-        }
-      }
-    }
-    // rule.spec.service.host = `su${rule.spec.service.host}`;
-
     const data = {
       url: parameterizedApiRulesUrl,
-      body: JSON.stringify(rule1),
+      body: apiRule ,
       rejectUnauthorized: false,
       headers: { "Content-type": 'application/merge-patch+json' },
     };
