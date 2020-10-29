@@ -6,6 +6,7 @@ class Subscription {
     return !Object.keys(this._subscribers).length;
   }
 
+  // https://github.com/kubernetes-client/javascript/issues/377 ?
   constructor(resourceType, kubeconfig) {
     this._subscribers = {};
 
