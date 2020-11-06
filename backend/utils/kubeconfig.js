@@ -1,4 +1,6 @@
-export function generateKubeconfigString(env) {
+import { KubeConfig } from "@kubernetes/client-node";
+
+const generateKubeconfigString = (env) => {
   const { DOMAIN } = env;
   return `apiVersion: v1
 clusters:
@@ -17,4 +19,10 @@ users:
 - name: OIDCUser
   user:
     token: to_be_replaced`;
+};
+
+export function initializeKubeconfig() {
+  const kubeconfig = new KubeConfig();
+  kubeconfig.loadFromString(generateKubeconfigString(process.env));
+  return kubeconfig;
 }
