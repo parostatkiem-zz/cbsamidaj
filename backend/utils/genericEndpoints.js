@@ -4,15 +4,16 @@ import fetch from "node-fetch";
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
   resourceUrlFragments,
-  isNamespaced = false
+  isNamespaced = true
 ) => {
   app.get(path, async (req, res) => {
     const opts = injectTokenToOptions({}, req, kubeconfig);
 
     try {
-      if (isNamespaced) resourceUrlFragments.splice(1, 0, `namespaces`, req.params.namespaceId);
+      const fragments = [...resourceUrlFragments];
+      if (isNamespaced) fragments.splice(1, 0, `namespaces`, req.params.namespaceId);
 
-      const response = await fetch(resourceUrlFragments.join("/"), { method: "GET", ...opts });
+      const response = await fetch(fragments.join("/"), { method: "GET", ...opts });
 
       if (!response.ok) {
         res.status(response.status);
