@@ -10,7 +10,7 @@ import createPodEndpoints from "./endpoints/pods";
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: "*" })); //TODO
 const server = http.createServer(app);
 const io = socketIO(server);
 

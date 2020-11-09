@@ -1,6 +1,16 @@
 import injectTokenToOptions from "./tokenInjector";
 import fetch from "node-fetch";
 
+function addJsonFieldToItems(sourceJSON) {
+  //TODO do this in a better way
+  sourceJSON.items.forEach((item) => {
+    console.log(item);
+    const jsonField = JSON.parse(JSON.stringify(item));
+    delete jsonField.status;
+    item.json = jsonField;
+  });
+}
+
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
   resourceUrlFragments,
@@ -21,8 +31,9 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
         return;
       }
 
-      const json = await response.json();
-      res.send(json);
+      const responseJSON = await response.json();
+      addJsonFieldToItems(responseJSON);
+      res.send(responseJSON);
     } catch (e) {
       res.status(500);
       res.send(e.message);
