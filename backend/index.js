@@ -62,6 +62,7 @@ createPodEndpoints(kubeconfig, app);
 
 const port = process.env.PORT || 3001;
 const address = process.env.ADDRESS || "localhost";
+console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
 server.listen(port, address, () => {
   console.log(`server started @ ${port}!`);
 });

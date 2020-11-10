@@ -4,12 +4,16 @@ import fetch from "node-fetch";
 function addJsonFieldToItems(sourceJSON) {
   //TODO do this in a better way
   sourceJSON.items.forEach((item) => {
-    console.log(item);
     const jsonField = JSON.parse(JSON.stringify(item));
     delete jsonField.status;
     item.json = jsonField;
   });
 }
+
+const calculateURL = (fragments, isNamespaced, namespace) => {
+  if (isNamespaced) fragments.splice(1, 0, `namespaces`, namespace);
+  return fragments.join("/");
+};
 
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
@@ -20,10 +24,9 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
     const opts = injectTokenToOptions({}, req, kubeconfig);
 
     try {
-      const fragments = [...resourceUrlFragments];
-      if (isNamespaced) fragments.splice(1, 0, `namespaces`, req.params.namespaceId);
+      const url = calculateURL([...resourceUrlFragments], isNamespaced, req.params.namespaceId);
 
-      const response = await fetch(fragments.join("/"), { method: "GET", ...opts });
+      const response = await fetch(url, { method: "GET", ...opts });
 
       if (!response.ok) {
         res.status(response.status);
@@ -35,6 +38,40 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       addJsonFieldToItems(responseJSON);
       res.send(responseJSON);
     } catch (e) {
+      console.error(e);
+      res.status(500);
+      res.send(e.message);
+    }
+  });
+};
+
+export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
+  path,
+  resourceUrlFragments,
+  isNamespaced = true
+) => {
+  app.patch(path, async (req, res) => {
+    const { name, namespace, json } = req.body;
+
+    const url = calculateURL([...resourceUrlFragments], isNamespaced, namespace);
+
+    const a = { headers: { "Content-type": "application/merge-patch+json" }, body: json };
+
+    const opts = injectTokenToOptions(a, req, kubeconfig);
+
+    try {
+      const response = await fetch(url, { method: "POST", ...opts });
+
+      if (!response.ok) {
+        res.status(response.status);
+        res.send(response.statusText);
+        return;
+      }
+
+      const responseJSON = await response.json();
+      console.log(responseJSON);
+    } catch (e) {
+      console.error(e);
       res.status(500);
       res.send(e.message);
     }
