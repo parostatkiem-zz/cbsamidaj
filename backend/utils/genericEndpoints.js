@@ -1,11 +1,13 @@
 import injectTokenToOptions from "./tokenInjector";
 import fetch from "node-fetch";
+import { loadYaml, CoreV1Api, dumpYaml } from "@kubernetes/client-node";
 
-function addJsonFieldToItems(sourceJSON) {
+function addJsonFieldToItems(sourceJSON, extraHeader) {
   //TODO do this in a better way
   sourceJSON.items.forEach((item) => {
-    const jsonField = JSON.parse(JSON.stringify(item));
+    let jsonField = JSON.parse(JSON.stringify(item));
     delete jsonField.status;
+    if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
     item.json = jsonField;
   });
 }
@@ -18,7 +20,8 @@ const calculateURL = (fragments, isNamespaced, namespace) => {
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
   resourceUrlFragments,
-  isNamespaced = true
+  isNamespaced = true,
+  extraItemHeader
 ) => {
   app.get(path, async (req, res) => {
     const opts = injectTokenToOptions({}, req, kubeconfig);
@@ -35,7 +38,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       }
 
       const responseJSON = await response.json();
-      addJsonFieldToItems(responseJSON);
+      addJsonFieldToItems(responseJSON, extraItemHeader);
       res.send(responseJSON);
     } catch (e) {
       console.error(e);
@@ -45,35 +48,22 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
   });
 };
 
-export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
-  path,
-  resourceUrlFragments,
-  isNamespaced = true
-) => {
+export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (path) => {
   app.patch(path, async (req, res) => {
     const { name, namespace, json } = req.body;
-
-    const url = calculateURL([...resourceUrlFragments], isNamespaced, namespace);
-
-    const a = { headers: { "Content-type": "application/merge-patch+json" }, body: json };
-
-    const opts = injectTokenToOptions(a, req, kubeconfig);
+    const opts = injectTokenToOptions({}, req, kubeconfig);
+    const u = kubeconfig.getCurrentUser();
+    u.token = opts.headers.Authorization.slice(7, opts.headers.Authorization.length);
+    kubeconfig.users = [u];
+    const k8sApi = kubeconfig.makeApiClient(CoreV1Api);
 
     try {
-      const response = await fetch(url, { method: "POST", ...opts });
-
-      if (!response.ok) {
-        res.status(response.status);
-        res.send(response.statusText);
-        return;
-      }
-
-      const responseJSON = await response.json();
-      console.log(responseJSON);
+      const responseJSON = await k8sApi.replaceNamespacedPod(name, namespace, json);
+      // console.log(responseJSON);
+      res.send(responseJSON.response.request);
     } catch (e) {
-      console.error(e);
-      res.status(500);
-      res.send(e.message);
+      res.status(e.response?.body?.code || 500);
+      res.send(e.response?.body?.message || e.message);
     }
   });
 };
