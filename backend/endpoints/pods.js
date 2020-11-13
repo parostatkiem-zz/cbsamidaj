@@ -2,6 +2,7 @@ import {
   createGenericGetEndpoint,
   createGenericDeleteEndpoint,
   createGenericJsonUpdateEndpoint,
+  createGenericSubscriptionEndpoint,
 } from "../utils/genericEndpoints";
 
 export default function createPodEndpoints(kubeconfig, app) {
@@ -21,4 +22,6 @@ export default function createPodEndpoints(kubeconfig, app) {
     "/namespaces/:namespace/pods/:name",
     `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods/{name}`
   );
+
+  createGenericSubscriptionEndpoint(kubeconfig, app)("pods", `/api/v1/namespaces/{namespace}/pods`);
 }

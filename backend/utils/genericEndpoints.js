@@ -1,25 +1,6 @@
 import injectTokenToOptions from "./tokenInjector";
 import fetch from "node-fetch";
-
-function addJsonFieldToItems(sourceJSON, extraHeader) {
-  //TODO do this in a better way
-  sourceJSON.items.forEach((item) => {
-    let jsonField = JSON.parse(JSON.stringify(item));
-    delete jsonField.status;
-    if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
-    item.json = jsonField;
-  });
-}
-
-const calculateURL = (template, variables) => {
-  let output = template;
-  Object.entries(variables).forEach(([key, value]) => {
-    if (value === undefined) return;
-    output = output.replace(`{${key}}`, value);
-  });
-  if (~output.indexOf("{")) throw new Error("Not every variable supplied for template " + template);
-  return output;
-};
+import { addJsonFieldToItems, calculateURL } from "./other";
 
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
@@ -103,4 +84,13 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
       res.send(e.message);
     }
   });
+};
+
+export const createGenericSubscriptionEndpoint = (kubeconfig, app) => (
+  resourceType,
+  urlTemplate,
+  isNamespaced = true
+) => {
+  const currentEndpoints = app.get("subscriptionEndpoints");
+  app.set("subscriptionEndpoints", { ...currentEndpoints, [resourceType]: urlTemplate });
 };

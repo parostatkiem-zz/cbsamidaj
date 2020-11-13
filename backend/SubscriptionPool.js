@@ -1,24 +1,31 @@
-const k8s = require("@kubernetes/client-node");
+import { Watch } from "@kubernetes/client-node";
+import { calculateURL } from "./utils/other";
 
 class Subscription {
-
   get hasNoSubscribers() {
     return !Object.keys(this._subscribers).length;
   }
 
   // https://github.com/kubernetes-client/javascript/issues/377 ?
-  constructor(resourceType, kubeconfig) {
+  constructor(resourceType, kubeconfig, token) {
     this._subscribers = {};
 
-    const watch = new k8s.Watch(kubeconfig); // todo only one instance per SubscriptionPool?
-    watch
+    // kubeconfig.applyToRequest({ headers: { Authorization: token } });
+    kubeconfig.users[0].token = token;
+    const watcher = new Watch(kubeconfig); // todo only one instance per SubscriptionPool?
+
+    watcher
       .watch(
         resourceType,
         {},
-        (type, apiObj, _watchObj) => this.notify({ type, object: apiObj }),
-        console.log
+        (type, apiObj, _watchObj) => {
+          console.log("got event", type);
+          this.notify({ type, object: apiObj });
+        },
+        console.error
       )
-      .then((req) => (this.controller = req));
+      .then((req) => (this.controller = req))
+      .catch((e) => console.error("error", e));
   }
 
   notify(data) {
@@ -41,21 +48,26 @@ class Subscription {
 }
 
 class SubscriptionPool {
-  constructor(io, kc) {
+  constructor(io, kc, subscriptionEndpoints) {
     this.io = io;
-    this.subscriptions = {};
+    this.subscriptions = subscriptionEndpoints;
 
     io.on("connection", (socket) => {
-      const resource = socket.handshake.query.resource;
-      const resourceType = this.mapResource(resource);
+      socket.emit("Piotrek");
+
+      const { resource, idToken: token, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
+      const resourceType = this.mapResource(resource, otherParams);
+
+      if (!resourceType) throw new Error("Client tried to subscribe to an unknown resource " + resource);
+      // console.log("trying to subscribe to", resource);
 
       if (!this.subscriptions[resourceType]) {
-        this.subscriptions[resourceType] = new Subscription(resourceType, kc);
+        this.subscriptions[resourceType] = new Subscription(resourceType, kc, token);
       }
       this.subscriptions[resourceType].addSubscriber(socket);
 
       socket.on("disconnect", () => {
-        this.subscriptions[resourceType].removeSubscriber(socket)
+        this.subscriptions[resourceType].removeSubscriber(socket);
         if (this.subscriptions[resourceType].hasNoSubscribers) {
           delete this.subscriptions[resourceType];
         }
@@ -63,12 +75,14 @@ class SubscriptionPool {
     });
   }
 
-  // todo namespace, error handling
-  mapResource(resource) {
-    return {
-      "api-rules":
-        "/apis/gateway.kyma-project.io/v1alpha1/namespaces/default/apirules",
-    }[resource];
+  // // todo namespace, error handling
+  // mapResource(resource) {
+  //   return {
+  //     "api-rules": "/apis/gateway.kyma-project.io/v1alpha1/namespaces/default/apirules",
+  //   }[resource];
+  // }
+  mapResource(resource, templateVariables) {
+    return calculateURL(this.subscriptions[resource], templateVariables);
   }
 }
 

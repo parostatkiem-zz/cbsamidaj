@@ -11,13 +11,13 @@ import createPodEndpoints from "./endpoints/pods";
 const app = express();
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" })); //TODO
-const server = http.createServer(app);
-const io = socketIO(server);
-
 const kubeconfig = initializeKubeconfig();
-
-new SubscriptionPool(io, kubeconfig);
+const server = http.createServer(app);
+const io = socketIO(server, { transports: ["websocket", "polling"] });
+app.set("subscriptionEndpoints", {});
 createPodEndpoints(kubeconfig, app);
+
+new SubscriptionPool(io, kubeconfig, app.get("subscriptionEndpoints"));
 
 // const apiRulesUrl = `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/kyma-system`;
 
