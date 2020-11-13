@@ -11,14 +11,19 @@ function addJsonFieldToItems(sourceJSON, extraHeader) {
   });
 }
 
-const calculateURL = (fragments, isNamespaced, namespace) => {
-  if (isNamespaced) fragments.splice(1, 0, `namespaces`, namespace);
-  return fragments.join("/");
+const calculateURL = (template, variables) => {
+  let output = template;
+  Object.entries(variables).forEach(([key, value]) => {
+    if (value === undefined) return;
+    output = output.replace(`{${key}}`, value);
+  });
+  if (~output.indexOf("{")) throw new Error("Not every variable supplied for template " + template);
+  return output;
 };
 
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
-  resourceUrlFragments,
+  urlTemplate,
   isNamespaced = true,
   extraItemHeader
 ) => {
@@ -26,7 +31,9 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
     const opts = injectTokenToOptions({}, req, kubeconfig);
 
     try {
-      const url = calculateURL([...resourceUrlFragments], isNamespaced, req.params.namespaceId);
+      const url = calculateURL(urlTemplate, {
+        namespace: isNamespaced ? req.params.namespace : undefined,
+      });
 
       const response = await fetch(url, { method: "GET", ...opts });
 
@@ -49,11 +56,12 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
 
 export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
   path,
-  resourceUrlFragments,
+  urlTemplate,
   isNamespaced = true
 ) => {
   app.patch(path, async (req, res) => {
-    const { name, namespace, json } = req.body;
+    const { json } = req.body;
+    const { name, namespace } = req.params;
 
     const opts = injectTokenToOptions(
       {
@@ -68,7 +76,7 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
     );
 
     try {
-      const url = calculateURL([...resourceUrlFragments], isNamespaced, namespace) + "/" + name; //todo
+      const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
       const response = await fetch(url, { method: "PUT", ...opts });
       res.send(response);

@@ -2,14 +2,14 @@ import { createGenericGetEndpoint, createGenericJsonUpdateEndpoint } from "../ut
 
 export default function createPodEndpoints(kubeconfig, app) {
   createGenericGetEndpoint(kubeconfig, app)(
-    "/namespaces/:namespaceId/pods",
-    [`${kubeconfig.getCurrentCluster().server}/api/v1`, `pods`],
+    "/namespaces/:namespace/pods",
+    `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods`,
     true,
     { kind: "Pod", apiVersion: "v1" }
   );
 
-  createGenericJsonUpdateEndpoint(kubeconfig, app)("/namespaces/:namespaceId/pods", [
-    `${kubeconfig.getCurrentCluster().server}/api/v1`,
-    `pods`,
-  ]);
+  createGenericJsonUpdateEndpoint(kubeconfig, app)(
+    "/namespaces/:namespace/pods/:name",
+    `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods/{name}`
+  );
 }
