@@ -89,8 +89,12 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
 export const createGenericSubscriptionEndpoint = (app) => (
   resourceType,
   urlTemplate,
-  isNamespaced = true
+  addJSONfield,
+  JSONfieldExtraHeader
 ) => {
   const currentEndpoints = app.get("subscriptionEndpoints");
-  app.set("subscriptionEndpoints", { ...currentEndpoints, [resourceType]: urlTemplate });
+  app.set("subscriptionEndpoints", {
+    ...currentEndpoints,
+    [resourceType]: { urlTemplate, addJSONfield, JSONfieldExtraHeader },
+  });
 };

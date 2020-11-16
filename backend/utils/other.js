@@ -1,11 +1,15 @@
 export function addJsonFieldToItems(sourceJSON, extraHeader) {
   //TODO do this in a better way
   sourceJSON.items.forEach((item) => {
-    let jsonField = JSON.parse(JSON.stringify(item));
-    delete jsonField.status;
-    if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
-    item.json = jsonField;
+    addJsonField(item, extraHeader);
   });
+}
+
+export function addJsonField(sourceJSON, extraHeader) {
+  let jsonField = JSON.parse(JSON.stringify(sourceJSON));
+  delete jsonField.status;
+  if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
+  sourceJSON.json = jsonField;
 }
 
 export const calculateURL = (template, variables) => {

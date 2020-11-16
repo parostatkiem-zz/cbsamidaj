@@ -1,7 +1,7 @@
 {
-  "name": "poc",
+  "name": "PAMELA",
   "version": "1.0.0",
-  "description": "",
+  "description": "APIserver proxy for Console",
   "main": "backend.index.js",
   "scripts": {
     "watch": "nodemon --exec babel-node index.js",
