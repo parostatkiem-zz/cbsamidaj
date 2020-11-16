@@ -9,9 +9,8 @@ class Subscription {
   // https://github.com/kubernetes-client/javascript/issues/377 ?
   constructor(resourceType, kubeconfig, token) {
     this._subscribers = {};
-
-    // kubeconfig.applyToRequest({ headers: { Authorization: token } });
     kubeconfig.users[0].token = token;
+
     const watcher = new Watch(kubeconfig); // todo only one instance per SubscriptionPool?
 
     watcher
@@ -19,13 +18,18 @@ class Subscription {
         resourceType,
         {},
         (type, apiObj, _watchObj) => {
-          console.log("got event", type);
+          if (
+            type === "ADDED" &&
+            apiObj.metadata?.creationTimestamp &&
+            new Date(apiObj.metadata.creationTimestamp) < new Date()
+          )
+            return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
           this.notify({ type, object: apiObj });
         },
         console.error
       )
       .then((req) => (this.controller = req))
-      .catch((e) => console.error("error", e));
+      .catch(console.error);
   }
 
   notify(data) {
@@ -53,13 +57,10 @@ class SubscriptionPool {
     this.subscriptions = subscriptionEndpoints;
 
     io.on("connection", (socket) => {
-      socket.emit("Piotrek");
-
       const { resource, idToken: token, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
       const resourceType = this.mapResource(resource, otherParams);
 
       if (!resourceType) throw new Error("Client tried to subscribe to an unknown resource " + resource);
-      // console.log("trying to subscribe to", resource);
 
       if (!this.subscriptions[resourceType]) {
         this.subscriptions[resourceType] = new Subscription(resourceType, kc, token);
@@ -75,12 +76,6 @@ class SubscriptionPool {
     });
   }
 
-  // // todo namespace, error handling
-  // mapResource(resource) {
-  //   return {
-  //     "api-rules": "/apis/gateway.kyma-project.io/v1alpha1/namespaces/default/apirules",
-  //   }[resource];
-  // }
   mapResource(resource, templateVariables) {
     return calculateURL(this.subscriptions[resource], templateVariables);
   }

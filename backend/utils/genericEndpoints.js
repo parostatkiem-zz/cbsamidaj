@@ -86,7 +86,7 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
   });
 };
 
-export const createGenericSubscriptionEndpoint = (kubeconfig, app) => (
+export const createGenericSubscriptionEndpoint = (app) => (
   resourceType,
   urlTemplate,
   isNamespaced = true
