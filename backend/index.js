@@ -23,7 +23,7 @@ app.use(function (req, res, next) {
   // the status option, or res.statusCode = 404
   // are equivalent, however with the option we
   // get the "status" local available as well
-  res.render("404", { status: 404, url: req.url });
+  res.status(404).send("URL " + req.url + " not found");
 });
 
 // error-handling middleware, take the same form
@@ -42,10 +42,8 @@ app.use(function (err, req, res, next) {
   // we may use properties of the error object
   // here and next(err) appropriately, or if
   // we possibly recovered from the error, simply next().
-  res.render("500", {
-    status: err.status || 500,
-    error: err,
-  });
+  console.error(err);
+  res.status(500).sent("Internal server error");
 });
 
 const port = process.env.PORT || 3001;

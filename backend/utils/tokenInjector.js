@@ -1,10 +1,9 @@
-const injectTokenToOptions = (options, requestObject, kubeconfig) => {
-  const token = requestObject.headers.authorization;
+const injectTokenToOptions = (options, requestHeaders, kubeconfig) => {
+  const token = requestHeaders.authorization;
 
-  return {
-    ...options,
-    headers: { ...(options.headers || {}), Authorization: token },
-  };
+  kubeconfig.applyAuthorizationHeader(options);
+
+  return options;
 };
 
 export default injectTokenToOptions;
