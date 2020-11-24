@@ -7,6 +7,7 @@ const SubscriptionPool = require("./SubscriptionPool");
 
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import createPodEndpoints from "./endpoints/pods";
+import { initializeApp } from "./utils/initialization";
 
 const app = express();
 app.use(bodyParser.json());
@@ -18,6 +19,8 @@ app.set("subscriptionEndpoints", {});
 createPodEndpoints(kubeconfig, app);
 
 new SubscriptionPool(io, kubeconfig, app.get("subscriptionEndpoints"));
+
+initializeApp(app, kubeconfig); //todo
 
 app.use(function (req, res, next) {
   // the status option, or res.statusCode = 404
@@ -50,5 +53,5 @@ const port = process.env.PORT || 3001;
 const address = process.env.ADDRESS || "localhost";
 console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
 server.listen(port, address, () => {
-  console.log(`SCALP server started @ ${port}!`);
+  console.log(`👙 PAMELA 👄  server started @ ${port}!`);
 });
