@@ -25,7 +25,7 @@ export default function createPodEndpoints(kubeconfig, app) {
 
   createGenericSubscriptionEndpoint(app)(
     "pods",
-    `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods`,
+    `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods?watch=true`,
     true,
     {
       kind: "Pod",

@@ -1,4 +1,3 @@
-import { Watch } from "@kubernetes/client-node";
 import { calculateURL, addJsonField } from "./utils/other";
 import injectTokenToOptions from "./utils/tokenInjector";
 import byline from "byline";
@@ -22,56 +21,33 @@ class Subscription {
 
   async addSubscriber(socket, resourceURL, configForResource, kubeconfig, injectHeadersFn) {
     const opts = await injectHeadersFn({});
-    // const watcher = new Watch(kubeconfig); // todo only one instance per SubscriptionPool?
-
+    let errOut = null;
     const stream = byline.createStream();
+
     stream.on("data", (line) => {
       const data = JSON.parse(line);
+
+      const createdAt = data.object?.metadata?.creationTimestamp;
+      if (data.type === "ADDED" && createdAt && new Date(createdAt) < new Date()) return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
+
       if (configForResource.addJSONfield) addJsonField(data.object, configForResource.JSONfieldExtraHeader);
       this.notify(data);
     });
-
-    let errOut = null;
     stream.on("error", (err) => {
-      console.log("stream error", err);
+      errOut = err;
     });
-    stream.on("close", () => console.log("stream closed"));
+    stream.on("close", () => (errOut = new Error("Stream closed unexpectedly")));
 
-    fetch(resourceURL + "?watch=true", { method: "GET", ...opts })
-      .then(
-        (r) =>
-          new Promise((resolve, reject) => {
-            const dest = stream;
-            r.body.pipe(dest);
-            dest.on("close", () => resolve());
-            dest.on("error", reject);
-          })
-      )
-      .catch((e) => {
-        console.error("catch", e);
-      })
-      .then((a) => console.log("resolved finaly", a));
-    // req.pipe(stream);
-    // watcher
-    //   .watch(
-    //     resourceURL,
-    //     {},
-    //     (type, apiObj, _watchObj) => {
-    //       console.log(type, apiobj);
-    //       if (
-    //         type === "ADDED" &&
-    //         apiObj.metadata?.creationTimestamp &&
-    //         new Date(apiObj.metadata.creationTimestamp) < new Date()
-    //       )
-    //         return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
+    const resp = await fetch(resourceURL, { method: "GET", ...opts });
 
-    //       if (configForResource.addJSONfield) addJsonField(apiObj, configForResource.JSONfieldExtraHeader);
-    //       this.notify({ type, object: apiObj });
-    //     },
-    //     console.error
-    //   )
-    //   .then((req) => (this.controller = req))
-    //   .catch(console.error);
+    new Promise((resolve, reject) => {
+      resp.body.pipe(stream);
+      this.controller = stream;
+      stream.on("close", () => resolve());
+      stream.on("error", reject);
+    });
+
+    if (errOut) throw errOut;
 
     this._subscribers[socket.id] = socket;
   }
@@ -80,7 +56,7 @@ class Subscription {
     delete this._subscribers[socket.id];
 
     if (this.hasNoSubscribers) {
-      // this.controller.abort();
+      this.controller.destroy();
     }
   }
 }
@@ -105,13 +81,18 @@ class SubscriptionPool {
       if (!this.subscriptions[resourceURL]) {
         this.subscriptions[resourceURL] = new Subscription();
       }
-      this.subscriptions[resourceURL].addSubscriber(
-        socket,
-        resourceURL,
-        configForResource,
-        kc,
-        injectHeadersFn
-      );
+
+      try {
+        this.subscriptions[resourceURL].addSubscriber(
+          socket,
+          resourceURL,
+          configForResource,
+          kc,
+          injectHeadersFn
+        );
+      } catch (e) {
+        console.error("Failed to add subscriber for resource", resource, err);
+      }
 
       socket.on("disconnect", () => {
         this.subscriptions[resourceURL].removeSubscriber(socket);
