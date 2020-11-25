@@ -15,6 +15,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
         namespace: isNamespaced ? req.params.namespace : undefined,
       });
 
+      console.log(opts);
       const response = await fetch(url, opts);
 
       if (!response.ok) {
