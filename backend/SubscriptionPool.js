@@ -1,5 +1,6 @@
 import { Watch } from "@kubernetes/client-node";
 import { calculateURL, addJsonField } from "./utils/other";
+import injectTokenToOptions from "./utils/tokenInjector";
 
 class Subscription {
   get hasNoSubscribers() {
@@ -7,9 +8,10 @@ class Subscription {
   }
 
   // https://github.com/kubernetes-client/javascript/issues/377 ?
-  constructor(resourceURL, configForResource, kubeconfig, requestHeaders, app) {
-    injectTokenToOptions({}, requestHeaders, kubeconfig, app);
+  constructor(resourceURL, configForResource, kubeconfig, injectHeadersFn) {
+    this._subscribers = [];
 
+    injectHeadersFn();
     const watcher = new Watch(kubeconfig); // todo only one instance per SubscriptionPool?
 
     watcher
@@ -58,7 +60,7 @@ class SubscriptionPool {
     this.subscriptions = app.get("subscriptionEndpoints");
 
     io.on("connection", (socket) => {
-      const { resource, idToken: token, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
+      const { resource, authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
       const configForResource = this.subscriptions[resource];
 
       if (!configForResource) {
@@ -66,10 +68,16 @@ class SubscriptionPool {
         return;
       }
 
+      const injectHeadersFn = (_) => injectTokenToOptions({}, { authorization }, kc, app);
       const resourceURL = this.getURLForResource(resource, otherParams);
 
       if (!this.subscriptions[resourceURL]) {
-        this.subscriptions[resourceURL] = new Subscription(resourceURL, configForResource, kc, app);
+        this.subscriptions[resourceURL] = new Subscription(
+          resourceURL,
+          configForResource,
+          kc,
+          injectHeadersFn
+        );
       }
       this.subscriptions[resourceURL].addSubscriber(socket);
 
