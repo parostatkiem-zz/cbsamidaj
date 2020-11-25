@@ -47,6 +47,9 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
       const opts = await injectTokenToOptions(
         {
           body: JSON.stringify(json),
+          headers: {
+            "content-type": "application/strategic-merge-patch+json",
+          },
         },
         req.headers,
         kubeconfig,
@@ -55,7 +58,8 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
 
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
-      const response = await fetch(url, { method: "PUT", ...opts });
+      const response = await fetch(url, { method: "PATCH", ...opts });
+      if (!response.ok) throw new Error("Failed to update resource " + name);
       res.send(response);
     } catch (e) {
       console.error(e);
