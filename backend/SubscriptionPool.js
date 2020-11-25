@@ -7,9 +7,8 @@ class Subscription {
   }
 
   // https://github.com/kubernetes-client/javascript/issues/377 ?
-  constructor(resourceURL, configForResource, kubeconfig, token) {
-    this._subscribers = {};
-    kubeconfig.users[0].token = token;
+  constructor(resourceURL, configForResource, kubeconfig, requestHeaders, app) {
+    injectTokenToOptions({}, requestHeaders, kubeconfig, app);
 
     const watcher = new Watch(kubeconfig); // todo only one instance per SubscriptionPool?
 
@@ -54,20 +53,23 @@ class Subscription {
 }
 
 class SubscriptionPool {
-  constructor(io, kc, subscriptionEndpoints) {
+  constructor(io, kc, app) {
     this.io = io;
-    this.subscriptions = subscriptionEndpoints;
+    this.subscriptions = app.get("subscriptionEndpoints");
 
     io.on("connection", (socket) => {
       const { resource, idToken: token, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
       const configForResource = this.subscriptions[resource];
 
-      if (!configForResource) throw new Error("Client tried to subscribe to an unknown resource " + resource);
+      if (!configForResource) {
+        console.error("Client tried to subscribe to an unknown resource:", resource);
+        return;
+      }
 
       const resourceURL = this.getURLForResource(resource, otherParams);
 
       if (!this.subscriptions[resourceURL]) {
-        this.subscriptions[resourceURL] = new Subscription(resourceURL, configForResource, kc, token);
+        this.subscriptions[resourceURL] = new Subscription(resourceURL, configForResource, kc, app);
       }
       this.subscriptions[resourceURL].addSubscriber(socket);
 

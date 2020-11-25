@@ -1,6 +1,7 @@
 var jwksClient = require("jwks-rsa");
 
 export async function initializeApp(app, kubeconfig) {
+  app.set("token_cache", []);
   try {
     const clusterUrl = kubeconfig.getCurrentCluster().server;
     const url = `https://dex.${clusterUrl.slice(12, clusterUrl.length)}/keys`;

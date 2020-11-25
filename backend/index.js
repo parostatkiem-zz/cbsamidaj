@@ -18,7 +18,7 @@ const io = socketIO(server, { transports: ["websocket", "polling"] });
 app.set("subscriptionEndpoints", {});
 createPodEndpoints(kubeconfig, app);
 
-new SubscriptionPool(io, kubeconfig, app.get("subscriptionEndpoints"));
+new SubscriptionPool(io, kubeconfig, app);
 
 initializeApp(app, kubeconfig); //todo
 
