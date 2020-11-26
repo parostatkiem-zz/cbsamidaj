@@ -19,8 +19,9 @@ class Subscription {
     }
   }
 
-  async addSubscriber(socket, resourceURL, configForResource, kubeconfig, injectHeadersFn) {
+  async addSubscriber(socket, resourceURL, configForResource, injectHeadersFn) {
     const opts = await injectHeadersFn({});
+
     let errOut = null;
     const stream = byline.createStream();
 
@@ -45,7 +46,7 @@ class Subscription {
       this.controller = stream;
       stream.on("close", () => resolve());
       stream.on("error", reject);
-    });
+    }).catch(console.error);
 
     if (errOut) throw errOut;
 
@@ -55,7 +56,7 @@ class Subscription {
   removeSubscriber(socket) {
     delete this._subscribers[socket.id];
 
-    if (this.hasNoSubscribers) {
+    if (this.hasNoSubscribers && this.controller) {
       this.controller.destroy();
     }
   }
@@ -67,7 +68,7 @@ class SubscriptionPool {
     this.subscriptions = app.get("subscriptionEndpoints");
 
     io.on("connection", (socket) => {
-      const { resource, authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
+      const { resource, idToken: authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
       const configForResource = this.subscriptions[resource];
 
       if (!configForResource) {
@@ -75,7 +76,6 @@ class SubscriptionPool {
         return;
       }
 
-      const injectHeadersFn = (baseOpts) => injectTokenToOptions(baseOpts, { authorization }, kc, app);
       const resourceURL = this.getURLForResource(resource, otherParams);
 
       if (!this.subscriptions[resourceURL]) {
@@ -83,11 +83,13 @@ class SubscriptionPool {
       }
 
       try {
+        const agent = app.get("https_agent");
+        const injectHeadersFn = (baseOpts) =>
+          injectTokenToOptions({ agent, ...baseOpts }, { authorization }, kc, app);
         this.subscriptions[resourceURL].addSubscriber(
           socket,
           resourceURL,
           configForResource,
-          kc,
           injectHeadersFn
         );
       } catch (e) {

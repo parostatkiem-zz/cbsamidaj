@@ -8,7 +8,7 @@ export function initializeKubeconfig() {
   if (kubeconfigLocation) kubeconfig.loadFromFile(kubeconfigLocation);
   else kubeconfig.loadFromCluster();
 
-  // console.log("Using the following Kubeconfig: ", kubeconfig.exportConfig());
+  console.log("Using the following Kubeconfig: ", kubeconfig.exportConfig());
 
   return kubeconfig;
 }

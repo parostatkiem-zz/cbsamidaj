@@ -10,7 +10,8 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
 ) => {
   app.get(path, async (req, res) => {
     try {
-      const opts = await injectTokenToOptions({}, req.headers, kubeconfig, app);
+      const agent = app.get("https_agent");
+      const opts = await injectTokenToOptions({ agent }, req.headers, kubeconfig, app);
       const url = calculateURL(urlTemplate, {
         namespace: isNamespaced ? req.params.namespace : undefined,
       });
@@ -18,7 +19,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       const response = await fetch(url, opts);
 
       if (!response.ok) {
-        res.status(response.status);
+        res.status(response.status + ", " + response.message);
         res.send(response.statusText);
         return;
       }
@@ -44,8 +45,10 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
     const { name, namespace } = req.params;
 
     try {
+      const agent = app.get("https_agent");
       const opts = await injectTokenToOptions(
         {
+          agent,
           body: JSON.stringify(json),
           headers: {
             "content-type": "application/strategic-merge-patch+json",
@@ -74,7 +77,8 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
     const { name, namespace } = req.params;
 
     try {
-      const opts = await injectTokenToOptions({}, req.headers, kubeconfig, app);
+      const agent = app.get("https_agent");
+      const opts = await injectTokenToOptions({ agent }, req.headers, kubeconfig, app);
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
       const response = await fetch(url, { method: "DELETE", ...opts });
