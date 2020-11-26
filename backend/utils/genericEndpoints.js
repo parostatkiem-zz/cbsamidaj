@@ -1,4 +1,4 @@
-import injectTokenToOptions from "./tokenInjector";
+import injectHeaders from "./headerInjector";
 import fetch from "node-fetch";
 import { addJsonFieldToItems, calculateURL } from "./other";
 
@@ -11,7 +11,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
   app.get(path, async (req, res) => {
     try {
       const agent = app.get("https_agent");
-      const opts = await injectTokenToOptions({ agent }, req.headers, kubeconfig, app);
+      const opts = await injectHeaders({ agent }, req.headers, kubeconfig, app);
       const url = calculateURL(urlTemplate, {
         namespace: isNamespaced ? req.params.namespace : undefined,
       });
@@ -46,7 +46,7 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
 
     try {
       const agent = app.get("https_agent");
-      const opts = await injectTokenToOptions(
+      const opts = await injectHeaders(
         {
           agent,
           body: JSON.stringify(json),
@@ -78,7 +78,7 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
 
     try {
       const agent = app.get("https_agent");
-      const opts = await injectTokenToOptions({ agent }, req.headers, kubeconfig, app);
+      const opts = await injectHeaders({ agent }, req.headers, kubeconfig, app);
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
       const response = await fetch(url, { method: "DELETE", ...opts });

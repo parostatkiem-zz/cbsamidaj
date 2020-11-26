@@ -1,5 +1,5 @@
 import { calculateURL, addJsonField } from "./utils/other";
-import injectTokenToOptions from "./utils/tokenInjector";
+import injectHeaders from "./utils/headerInjector";
 import byline from "byline";
 import fetch from "node-fetch";
 
@@ -85,7 +85,7 @@ class SubscriptionPool {
       try {
         const agent = app.get("https_agent");
         const injectHeadersFn = (baseOpts) =>
-          injectTokenToOptions({ agent, ...baseOpts }, { authorization }, kc, app);
+          injectHeaders({ agent, ...baseOpts }, { authorization }, kc, app);
         this.subscriptions[resourceURL].addSubscriber(
           socket,
           resourceURL,
