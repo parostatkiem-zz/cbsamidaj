@@ -28,8 +28,8 @@ export async function initializeApp(app, kubeconfig) {
     });
 
     app.set("https_agent", sslConfiguredAgent);
-    console.log("✔️  Setting up https cert agent");
+    console.log("✔️  Setting up https HTTPS agent");
   } catch (e) {
-    console.error("❌ Setting up https cert agent ended with error; an insecure connection will be used.", e);
+    console.error("❌ Setting up https HTTPS agent ended with error; an insecure connection will be used.");
   }
 }

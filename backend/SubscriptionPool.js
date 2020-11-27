@@ -68,7 +68,7 @@ class SubscriptionPool {
     this.subscriptions = app.get("subscriptionEndpoints");
 
     io.on("connection", (socket) => {
-      const { resource, idToken: authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL
+      const { resource, authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL (no idea how)
       const configForResource = this.subscriptions[resource];
 
       if (!configForResource) {
@@ -82,19 +82,15 @@ class SubscriptionPool {
         this.subscriptions[resourceURL] = new Subscription();
       }
 
-      try {
-        const agent = app.get("https_agent");
-        const injectHeadersFn = (baseOpts) =>
-          injectHeaders({ agent, ...baseOpts }, { authorization }, kc, app);
-        this.subscriptions[resourceURL].addSubscriber(
-          socket,
-          resourceURL,
-          configForResource,
-          injectHeadersFn
-        );
-      } catch (e) {
-        console.error("Failed to add subscriber for resource", resource, err);
-      }
+      const agent = app.get("https_agent");
+
+      const injectHeadersFn = (baseOpts) => injectHeaders({ agent, ...baseOpts }, { authorization }, kc, app);
+
+      this.subscriptions[resourceURL]
+        .addSubscriber(socket, resourceURL, configForResource, injectHeadersFn) // add subscriber asynchronously
+        .catch((e) => {
+          console.error("Failed to add subscriber for resource", resource, e);
+        });
 
       socket.on("disconnect", () => {
         this.subscriptions[resourceURL].removeSubscriber(socket);
