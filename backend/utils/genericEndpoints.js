@@ -19,7 +19,10 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       const response = await fetch(url, opts);
 
       if (!response.ok) {
-        res.status(response.status + ", " + response.message);
+        console.warn(
+          `Request to ${url} ended with error. Message: ${response.message} Status: ${response.status}`
+        );
+        res.status(response.status);
         res.send(response.statusText);
         return;
       }

@@ -31,7 +31,8 @@ class Subscription {
       const createdAt = data.object?.metadata?.creationTimestamp;
       if (data.type === "ADDED" && createdAt && new Date(createdAt) < new Date()) return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
 
-      if (configForResource.addJSONfield) addJsonField(data.object, configForResource.JSONfieldExtraHeader);
+      if (configForResource.addJSONfield && data?.object)
+        addJsonField(data.object, configForResource.JSONfieldExtraHeader);
       this.notify(data);
     });
     stream.on("error", (err) => {

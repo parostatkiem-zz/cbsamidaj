@@ -5,11 +5,15 @@ export function addJsonFieldToItems(sourceJSON, extraHeader) {
   });
 }
 
-export function addJsonField(sourceJSON, extraHeader) {
-  let jsonField = JSON.parse(JSON.stringify(sourceJSON));
-  delete jsonField.status;
-  if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
-  sourceJSON.json = jsonField;
+export async function addJsonField(sourceJSON, extraHeader) {
+  try {
+    let jsonField = JSON.parse(JSON.stringify(sourceJSON));
+    delete jsonField.status;
+    if (extraHeader) jsonField = { ...extraHeader, ...jsonField };
+    sourceJSON.json = jsonField;
+  } catch (e) {
+    console.error("Failed to add JSON field to an item", sourceJSON, e);
+  }
 }
 
 export const calculateURL = (template, variables) => {
