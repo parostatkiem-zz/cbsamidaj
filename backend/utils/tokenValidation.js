@@ -15,7 +15,7 @@ export async function validateToken(token, app) {
   const tokenFromCache = app.get(CACHE_KEY).find((t) => t.token === tokenNaked);
   if (tokenFromCache && !hasCachedTokenExpired(tokenFromCache)) {
     // verified from cache
-    console.log("token verified from cache");
+    console.log("token verified from cache"); // Even more not sure if we need this log...
     return tokenFromCache.email;
   }
 
